@@ -1,11 +1,12 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: Creates the basic Networking components.
 Parameters:
-  ProjectTagValue:
+  TagProjectName:
     Type: String
     Description: Project Name
   VPCName:
     Type: String
+    Description: VPC Name
 Resources:
   VPC:
     Type: AWS::EC2::VPC
@@ -16,7 +17,7 @@ Resources:
       Tags:
         - Key: Project
           Value:
-            Ref: ProjectTagValue
+            Ref: TagProjectName
         - Key: Name
           Value:
             Ref: VPCName
@@ -35,7 +36,7 @@ Resources:
           Value: Inbound
         - Key: Project
           Value:
-            Ref: ProjectTagValue
+            Ref: TagProjectName
         - Key: SubnetType
           Value: Public
         - Key: Name
@@ -57,7 +58,7 @@ Resources:
           Value: Inbound
         - Key: Project
           Value:
-            Ref: ProjectTagValue
+            Ref: TagProjectName
         - Key: SubnetType
           Value: Public
         - Key: Name
@@ -79,7 +80,7 @@ Resources:
           Value: Outbound
         - Key: Project
           Value:
-            Ref: ProjectTagValue
+            Ref: TagProjectName
         - Key: SubnetType
           Value: Private
         - Key: Name
@@ -101,7 +102,7 @@ Resources:
           Value: NonInternetAccess
         - Key: Project
           Value:
-            Ref: ProjectTagValue
+            Ref: TagProjectName
         - Key: SubnetType
           Value: Private
         - Key: Name
