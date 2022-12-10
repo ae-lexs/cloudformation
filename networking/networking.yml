@@ -15,17 +15,21 @@ Resources:
       EnableDnsHostnames: true
       EnableDnsSupport: true
       Tags:
-        - Key: Project
-          Value:
-            Ref: TagProjectName
         - Key: Name
           Value:
             Ref: VPCName
+        - Key: Project
+          Value:
+            Ref: TagProjectName
 
   InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties: 
-      Tags: 
+      Tags:
+        - Key: Name
+          Value: !Sub 
+            - '${VPCName}_internet_gateway'
+            - VPCName: !Ref VPCName
         - Key: Project
           Value:
             Ref: TagProjectName
@@ -41,7 +45,11 @@ Resources:
   RouteTable:
     Type: AWS::EC2::RouteTable
     Properties: 
-      Tags: 
+      Tags:
+        - Key: Name
+          Value: !Sub 
+            - '${VPCName}_route_table'
+            - VPCName: !Ref VPCName
         - Key: Project
           Value:
             Ref: TagProjectName
@@ -57,26 +65,28 @@ Resources:
       RouteTableId:
         Ref: RouteTable
 
-  PublicSubnet1:
+  PublicSubnetA:
     Type: AWS::EC2::Subnet
     Properties:
       AvailabilityZone: !Select 
         - 0
         - !GetAZs 
-          Ref: 'AWS::Region'
+          Ref: AWS::Region
       CidrBlock: 10.0.0.0/24
       EnableDns64: false
       MapPublicIpOnLaunch: true
       Tags:
         - Key: InternetAccess
           Value: Inbound
+        - Key: Name
+          Value: !Sub 
+            - '${VPCName}_public_subnet_a'
+            - VPCName: !Ref VPCName
         - Key: Project
           Value:
             Ref: TagProjectName
         - Key: SubnetType
           Value: Public
-        - Key: Name
-          Value: PublicSubnet1
       VpcId:
         Ref: VPC
 
@@ -91,23 +101,25 @@ Resources:
   PublicSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
-      AvailabilityZone:
-        Fn::Select:
-          - 1
-          - Fn::GetAZs: 'AWS::Region'
+      AvailabilityZone: !Select 
+        - 1
+        - !GetAZs 
+          Ref: AWS::Region
       CidrBlock: 10.0.1.0/24
       EnableDns64: false
       MapPublicIpOnLaunch: true
       Tags:
         - Key: InternetAccess
           Value: Inbound
+        - Key: Name
+          Value: !Sub 
+            - '${VPCName}_public_subnet_b'
+            - VPCName: !Ref VPCName
         - Key: Project
           Value:
             Ref: TagProjectName
         - Key: SubnetType
           Value: Public
-        - Key: Name
-          Value: PublicSubnet2
       VpcId:
         Ref: VPC
 
@@ -119,47 +131,47 @@ Resources:
       SubnetId:
         Ref: PublicSubnet2
 
-  PrivateSubnet1:
-    Type: AWS::EC2::Subnet
-    Properties:
-      AvailabilityZone:
-        Fn::Select:
-          - 2
-          - Fn::GetAZs: ''
-      CidrBlock: 10.0.2.0/24
-      EnableDns64: false
-      MapPublicIpOnLaunch: false
-      Tags:
-        - Key: InternetAccess
-          Value: Outbound
-        - Key: Project
-          Value:
-            Ref: TagProjectName
-        - Key: SubnetType
-          Value: Private
-        - Key: Name
-          Value: PrivateSubnet1
-      VpcId:
-        Ref: VPC
-  PrivateSubnet2:
-    Type: AWS::EC2::Subnet
-    Properties:
-      AvailabilityZone:
-        Fn::Select:
-          - 3
-          - Fn::GetAZs: ''
-      CidrBlock: 10.0.3.0/24
-      EnableDns64: false
-      MapPublicIpOnLaunch: false
-      Tags:
-        - Key: InternetAccess
-          Value: NonInternetAccess
-        - Key: Project
-          Value:
-            Ref: TagProjectName
-        - Key: SubnetType
-          Value: Private
-        - Key: Name
-          Value: PrivateSubnet2
-      VpcId:
-        Ref: VPC
+  # PrivateSubnet1:
+  #   Type: AWS::EC2::Subnet
+  #   Properties:
+  #     AvailabilityZone:
+  #       Fn::Select:
+  #         - 2
+  #         - Fn::GetAZs: ''
+  #     CidrBlock: 10.0.2.0/24
+  #     EnableDns64: false
+  #     MapPublicIpOnLaunch: false
+  #     Tags:
+  #       - Key: InternetAccess
+  #         Value: Outbound
+  #       - Key: Project
+  #         Value:
+  #           Ref: TagProjectName
+  #       - Key: SubnetType
+  #         Value: Private
+  #       - Key: Name
+  #         Value: PrivateSubnet1
+  #     VpcId:
+  #       Ref: VPC
+  # PrivateSubnet2:
+  #   Type: AWS::EC2::Subnet
+  #   Properties:
+  #     AvailabilityZone:
+  #       Fn::Select:
+  #         - 3
+  #         - Fn::GetAZs: ''
+  #     CidrBlock: 10.0.3.0/24
+  #     EnableDns64: false
+  #     MapPublicIpOnLaunch: false
+  #     Tags:
+  #       - Key: InternetAccess
+  #         Value: NonInternetAccess
+  #       - Key: Project
+  #         Value:
+  #           Ref: TagProjectName
+  #       - Key: SubnetType
+  #         Value: Private
+  #       - Key: Name
+  #         Value: PrivateSubnet2
+  #     VpcId:
+  #       Ref: VPC
