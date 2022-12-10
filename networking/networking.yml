@@ -1,12 +1,9 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: Creates the basic Networking components.
 Parameters:
-  TagProjectName:
+  ProjectName:
     Type: String
     Description: Project Name
-  VPCName:
-    Type: String
-    Description: VPC Name
 Resources:
   VPC:
     Type: AWS::EC2::VPC
@@ -16,11 +13,11 @@ Resources:
       EnableDnsSupport: true
       Tags:
         - Key: Name
-          Value:
-            Ref: VPCName
+          Value: !Sub 
+            - '${ProjectName}_vpc'
+            - ProjectName: !Ref ProjectName
         - Key: Project
-          Value:
-            Ref: TagProjectName
+          Value: !Ref ProjectName
 
   InternetGateway:
     Type: AWS::EC2::InternetGateway
@@ -28,42 +25,59 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub 
-            - '${VPCName}_internet_gateway'
-            - VPCName: !Ref VPCName
+            - '${ProjectName}_internet_gateway'
+            - ProjectName: !Ref ProjectName
         - Key: Project
-          Value:
-            Ref: TagProjectName
+          Value: !Ref ProjectName
 
   InternetGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties: 
-      InternetGatewayId:
-        Ref: InternetGateway
-      VpcId:
-        Ref: VPC
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
 
-  RouteTable:
+  InboundInternetAccessRouteTable:
     Type: AWS::EC2::RouteTable
     Properties: 
       Tags:
         - Key: Name
           Value: !Sub 
-            - '${VPCName}_route_table'
-            - VPCName: !Ref VPCName
+            - '${ProjectName}_inbound_internet_access_route_table'
+            - ProjectName: !Ref ProjectName
         - Key: Project
-          Value:
-            Ref: TagProjectName
-      VpcId:
-        Ref: VPC
+          Value: !Ref ProjectName
+      VpcId: !Ref VPC
 
   InternetGatewayRoute:
     Type: AWS::EC2::Route
     Properties: 
       DestinationCidrBlock: 0.0.0.0/0
-      GatewayId:
-        Ref: InternetGateway
-      RouteTableId:
-        Ref: RouteTable
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref InboundInternetAccessRouteTable
+
+  OutboundInternetAccessRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties: 
+      Tags:
+        - Key: Name
+          Value: !Sub 
+            - '${ProjectName}_outbound_internet_access_route_table'
+            - ProjectName: !Ref ProjectName
+        - Key: Project
+          Value: !Ref ProjectName
+      VpcId: !Ref VPC
+
+  NatGatewayElasticIP:
+    Type: AWS::EC2::EIP
+    Properties: 
+      Domain: 'vpc'
+      Tags:
+        - Key: Name
+          Value: !Sub 
+            - '${ProjectName}_nat_gateway_elastic_ip'
+            - ProjectName: !Ref ProjectName
+        - Key: Project
+          Value: !Ref ProjectName
 
   PublicSubnetA:
     Type: AWS::EC2::Subnet
@@ -80,25 +94,21 @@ Resources:
           Value: Inbound
         - Key: Name
           Value: !Sub 
-            - '${VPCName}_public_subnet_a'
-            - VPCName: !Ref VPCName
+            - '${ProjectName}_public_subnet_a'
+            - ProjectName: !Ref ProjectName
         - Key: Project
-          Value:
-            Ref: TagProjectName
+          Value: !Ref ProjectName
         - Key: SubnetType
           Value: Public
-      VpcId:
-        Ref: VPC
+      VpcId: !Ref VPC
 
-  PublicSubnet1RouteTableAssociation:
+  PublicSubnetARouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties: 
-      RouteTableId:
-        Ref: RouteTable
-      SubnetId:
-        Ref: PublicSubnet1
+      RouteTableId: !Ref InboundInternetAccessRouteTable
+      SubnetId: !Ref PublicSubnetA
 
-  PublicSubnet2:
+  PublicSubnetB:
     Type: AWS::EC2::Subnet
     Properties:
       AvailabilityZone: !Select 
@@ -113,65 +123,88 @@ Resources:
           Value: Inbound
         - Key: Name
           Value: !Sub 
-            - '${VPCName}_public_subnet_b'
-            - VPCName: !Ref VPCName
+            - '${ProjectName}_public_subnet_b'
+            - ProjectName: !Ref ProjectName
         - Key: Project
-          Value:
-            Ref: TagProjectName
+          Value: !Ref ProjectName
         - Key: SubnetType
           Value: Public
-      VpcId:
-        Ref: VPC
+      VpcId: !Ref VPC
 
-  PublicSubnet2RouteTableAssociation:
+  PublicSubnetBRouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties: 
-      RouteTableId:
-        Ref: RouteTable
-      SubnetId:
-        Ref: PublicSubnet2
+      RouteTableId: !Ref InboundInternetAccessRouteTable
+      SubnetId: !Ref PublicSubnetB
 
-  # PrivateSubnet1:
-  #   Type: AWS::EC2::Subnet
-  #   Properties:
-  #     AvailabilityZone:
-  #       Fn::Select:
-  #         - 2
-  #         - Fn::GetAZs: ''
-  #     CidrBlock: 10.0.2.0/24
-  #     EnableDns64: false
-  #     MapPublicIpOnLaunch: false
-  #     Tags:
-  #       - Key: InternetAccess
-  #         Value: Outbound
-  #       - Key: Project
-  #         Value:
-  #           Ref: TagProjectName
-  #       - Key: SubnetType
-  #         Value: Private
-  #       - Key: Name
-  #         Value: PrivateSubnet1
-  #     VpcId:
-  #       Ref: VPC
-  # PrivateSubnet2:
-  #   Type: AWS::EC2::Subnet
-  #   Properties:
-  #     AvailabilityZone:
-  #       Fn::Select:
-  #         - 3
-  #         - Fn::GetAZs: ''
-  #     CidrBlock: 10.0.3.0/24
-  #     EnableDns64: false
-  #     MapPublicIpOnLaunch: false
-  #     Tags:
-  #       - Key: InternetAccess
-  #         Value: NonInternetAccess
-  #       - Key: Project
-  #         Value:
-  #           Ref: TagProjectName
-  #       - Key: SubnetType
-  #         Value: Private
-  #       - Key: Name
-  #         Value: PrivateSubnet2
-  #     VpcId:
-  #       Ref: VPC
+  OutboundNatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties: 
+      AllocationId: !GetAtt NatGatewayElasticIP.AllocationId
+      Tags:
+        - Key: Name
+          Value: !Sub 
+            - '${ProjectName}_outbound_nat_gateway'
+            - ProjectName: !Ref ProjectName
+        - Key: Project
+          Value: !Ref ProjectName
+      SubnetId: !Ref PublicSubnetB
+
+  NatGatewayRoute:
+    Type: AWS::EC2::Route
+    Properties: 
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref OutboundNatGateway
+      RouteTableId: !Ref OutboundInternetAccessRouteTable
+
+  PrivateSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select 
+        - 0
+        - !GetAZs 
+          Ref: AWS::Region
+      CidrBlock: 10.0.2.0/24
+      EnableDns64: false
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: InternetAccess
+          Value: Private
+        - Key: Name
+          Value: !Sub 
+            - '${ProjectName}_private_subnet_a'
+            - ProjectName: !Ref ProjectName
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: SubnetType
+          Value: Private
+      VpcId: !Ref VPC
+
+  PrivateSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select 
+        - 1
+        - !GetAZs 
+          Ref: AWS::Region
+      CidrBlock: 10.0.3.0/24
+      EnableDns64: false
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: InternetAccess
+          Value: Outbound
+        - Key: Name
+          Value: !Sub 
+            - '${ProjectName}_private_subnet_b'
+            - ProjectName: !Ref ProjectName
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: SubnetType
+          Value: Private
+      VpcId: !Ref VPC
+
+  PrivateSubnetBRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: 
+      RouteTableId: !Ref OutboundInternetAccessRouteTable
+      SubnetId: !Ref PrivateSubnetB
